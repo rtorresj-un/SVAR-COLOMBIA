@@ -161,6 +161,69 @@ head(data)
 summary(data)
 data <- na.omit(data)
 data <- ts(data, start = c(1998,1), frequency = 12)
+autoplot(ts(data, start = c(1998,1), frequency = 12), facets = T)
+attach(data)
+##Pruebas de raíz unitaria####
+summary(ur.df(CPI_US, lags=8, selectlags = "AIC", type = "trend")); interp_urdf(ur.df(CPI_US,type = 'trend'),level = "5pct")
+## La tendencia y deriva son significativas, aunque graficamente parece no tener tendencia 
+
+##por tanto hacemos ambas pruebas 
+summary(ur.df(log(CPI_US), lags=8, selectlags = "AIC", type = "drift")); interp_urdf(ur.df(CPI_US,type = 'drift'),level = "5pct")
+
+grid.arrange(
+  ggAcf(log(CPI_US),lag.max=60,plot=T,lwd=2,xlab='',main='ACF del IPC', ylim=c(-1,1)),
+  ggPacf(log(CPI_US),lag.max=60,plot=T,lwd=2,xlab='',main='PACF del IPC', ylim=c(-1,1)),
+  ggAcf(diff(log(CPI_US)),lag.max=60,plot=T,lwd=2,xlab='',main='ACF del IPC diferenciado', ylim=c(-1,1)),
+  ggPacf(diff(log(CPI_US)),lag.max=60,plot=T,lwd=2,xlab='',main='PACF del IPC diferenciado', ylim=c(-1,1))
+)
+
+summary(ur.df(diff(log(CPI_US)), lags=8, selectlags = "AIC", type = "none")); interp_urdf(ur.df(diff(CPI_US, 2),type = 'none'),level = "5pct")
+
+summary(ur.pp(log(CPI_US),model=c("trend"), type=c("Z-tau"), use.lag = 10))#ho: no estacionariedad
+summary(ur.pp(log(CPI_US),model=c("constant"), type=c("Z-tau"), use.lag = 10))#ho: no estacionariedad
+summary(ur.pp(diff(log(CPI_US)),model=c("trend"), type=c("Z-tau"), use.lag = 10))#ho: no estacionariedad
+summary(ur.pp(diff(log(CPI_US)),model=c("constant"), type=c("Z-tau"), use.lag = 10))#ho: no estacionariedad
+
+summary(ur.df(IPI_US, lags=8, selectlags = "AIC", type = "trend")); interp_urdf(ur.df(IPI_US,type = 'trend'),level = "5pct")
+## La tendencia y deriva son significativas, aunque graficamente parece no tener tendencia 
+
+##por tanto hacemos ambas pruebas 
+summary(ur.df(log(IPI_US), lags=8, selectlags = "AIC", type = "none")); interp_urdf(ur.df(log(IPI_US),type = 'none'),level = "5pct")
+
+grid.arrange(
+  ggAcf(log(IPI_US),lag.max=60,plot=T,lwd=2,xlab='',main='ACF del IPI', ylim=c(-1,1)),
+  ggPacf(log(IPI_US),lag.max=60,plot=T,lwd=2,xlab='',main='PACF del IPI', ylim=c(-1,1)),
+  ggAcf(diff(log(IPI_US)),lag.max=60,plot=T,lwd=2,xlab='',main='ACF del IPI diferenciado', ylim=c(-1,1)),
+  ggPacf(diff(log(IPI_US)),lag.max=60,plot=T,lwd=2,xlab='',main='PACF del IPI diferenciado', ylim=c(-1,1))
+)
+
+summary(ur.df(diff(log(IPI_US)), lags=8, selectlags = "AIC", type = "none")); interp_urdf(ur.df(diff(log(IPI_US)),type = 'none'),level = "5pct")
+
+qplot(FECHA[-1], diff(log(IPI_US)))
+
+X=SHADOW_RATE
+
+summary(ur.df(X, lags=8, selectlags = "AIC", type = "trend")); interp_urdf(ur.df(X,type = 'trend'),level = "5pct")
+## La tendencia y deriva son significativas, aunque graficamente parece no tener tendencia 
+
+##por tanto hacemos ambas pruebas 
+summary(ur.df(X, lags=8, selectlags = "AIC", type = "drift")); interp_urdf(ur.df(X,type = 'drift'),level = "5pct")
+summary(ur.df(X, lags=8, selectlags = "AIC", type = "none")); interp_urdf(ur.df(X,type = 'none'),level = "5pct")
+
+grid.arrange(
+  ggAcf(X,lag.max=60,plot=T,lwd=2,xlab='',main='ACF del {X}', ylim=c(-1,1)),
+  ggPacf(X,lag.max=60,plot=T,lwd=2,xlab='',main='PACF del {X}', ylim=c(-1,1)),
+  ggAcf(diff(X),lag.max=60,plot=T,lwd=2,xlab='',main='ACF del {X} diferenciado', ylim=c(-1,1)),
+  ggPacf(diff(X),lag.max=60,plot=T,lwd=2,xlab='',main='PACF del {X} diferenciado', ylim=c(-1,1))
+)
+
+summary(ur.df(diff(X), lags=8, selectlags = "AIC", type = "trend")); interp_urdf(ur.df(diff(X),type = 'trend'),level = "5pct")
+summary(ur.df(diff(X), lags=8, selectlags = "AIC", type = "none")); interp_urdf(ur.df(diff(X),type = 'none'),level = "5pct")
 
 
-autoplot(data, facets = T)
+
+desestacionalizar
+ipp col
+ipc
+expo impo
+itcr
