@@ -235,9 +235,19 @@ residSVAR_exo<-SVAR_exo$Sigma.U%*%t(residuals(VAR(U, p = 1, ic = 'AIC')))
 residSVAR_exo<- t(residSVAR_exo)[,'u_nbr']
 autoplot(ts(residSVAR_exo,start = 1998,frequency = 12))
 
-Y=cbind(log(BRENT), log(CAFE), log(IPI_US), log(CPI_US), SHADOW_RATE, log(IPI_COL), log(IPC_COL), log(ITCR), 'XN'=EXPORTACIONES-IMPORTACIONES, BANREP_RATE)
-Y<-diff(Y)
-Y<-cbind(residSVAR_exo, Y[-1,])
+lBRENT<-log(BRENT)
+lCAFE<-log(CAFE)
+lIPI_US<-log(IPI_US)
+lCPI_US<-log(CPI_US)
+lIPI_COL<-log(IPI_COL)
+lIPC_COL<-log(IPC_COL)
+lITCR<-log(ITCR)
+
+Y<-cbind(lBRENT,lCAFE, lIPI_US, lCPI_US, SHADOW_RATE, lIPI_COL, 
+         lIPC_COL, lITCR, 'XN'=EXPORTACIONES-IMPORTACIONES, BANREP_RATE)
+
+diffY<-diff(Y)
+Y<-cbind(residSVAR_exo, diffY)
 VARselect(Y)
 VAR_1<-VAR(Y, p = 1, ic = 'AIC')
 summary(VAR_1)
