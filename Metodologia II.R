@@ -164,7 +164,7 @@ autoplot(ts(data, start = c(1998,1), frequency = 12), facets = T)
 attach(data)
 ##Pruebas de raíz unitaria####
 
-X=log(M3_USA)
+X=log(ITCR)
 qplot(FECHA[], X, geom = 'line')
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "trend")); interp_urdf(ur.df(X,type = 'trend', lags=8),level = "5pct")
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "drift")); interp_urdf(ur.df(X,type = 'drift', lags=8),level = "5pct")
@@ -200,10 +200,47 @@ lin.cycle <- X - linear
 autoplot(lin.cycle)
 X<-lin.cycle
 
+X<-TOTRES-NONBOR
+lin.mod <- lm(X ~ time(X))
+lin.trend <- lin.mod$fitted.values
+linear <- ts(lin.trend, start = 1998, frequency = 12)
+lin.cycle <- X - linear
+autoplot(lin.cycle)
+X<-lin.cycle
+u_ffr<-X
+u_trr<-X
+u_nbr<-X
+u_brr<-X
+
+U<-cbind(u_trr, u_nbr, u_ffr)
+
+v_d<-residuals(lm(u_trr~u_ffr))
+v_b<-residuals(lm(u_brr~u_ffr))
+v_s<-residuals(lm(u_nbr~v_d+v_b))
+autoplot(ts(v_s, start = 1998, frequency = 12))
+
+b_exo<-matrix(nrow = 3, ncol = 3, 
+              rbind(c( 1 , NA , 0 ), 
+                    c( 1 , 1 , -1 ),
+                    c( 0 , NA , 0 )))
+ 
+VARselect(U, type = 'none')
+SVAR_exo<-SVAR(VAR(U, p = 1, ic = 'AIC'), ic = 'AIC', Bmat = b_exo, estmethod = 'scoring', max.iter = 1000, maxls = 1000)
+autoplot(ts(residuals(VAR(U, p = 1, ic = 'AIC'))[,'u_nbr'], start = 1998, frequency = 12))
+summary(SVAR_exo)
+plot(irf(SVAR_exo, ortho = T))
+autoplot(ts(SVAR_exo[["var"]][["varresult"]][["u_nbr"]][["residuals"]], start = 1998, frequency = 12))
+
+residSVAR_exo<-SVAR_exo$Sigma.U%*%t(residuals(VAR(U, p = 1, ic = 'AIC')))
+residSVAR_exo<- t(residSVAR_exo)[,'u_nbr']
+autoplot(ts(residSVAR_exo,start = 1998,frequency = 12))
+
+Y=cbind(log(BRENT), log(CAFE), log(IPI_US), log(CPI_US), SHADOW_RATE, log(IPI_COL), log(IPC_COL), log(ITCR), 'XN'=EXPORTACIONES-IMPORTACIONES, BANREP_RATE)
+Y<-diff(Y)
+Y<-cbind(residSVAR_exo, Y[-1,])
+VARselect(Y)
+VAR_1<-VAR(Y, p = 1, ic = 'AIC')
+summary(VAR_1)
 
 
-desestacionalizar
-ipp col
-ipc
-expo impo
-itcr
+
