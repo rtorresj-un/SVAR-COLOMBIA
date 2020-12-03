@@ -184,12 +184,22 @@ summary(ur.df(diff(X), lags=8, selectlags = "AIC", type = "none")); interp_urdf(
 qplot(FECHA[-1], diff(X), geom = 'line')
 
 plot(decompose(ts(X, frequency = 12) ))
-adsdas<-decompose(ts(X, frequency = 12) )
+adsdas<-decompose(ts(X, frequency = 12))
 library(seasonal)
 plot(seas(ts(X, start = 1998, frequency = 12), x11 =''))
 fadfda<-seas(ts(X, start = 1998, frequency = 12), x11 ='')
 asdadfadfasd<-fadfda[["data"]]
-data$M3_COL<-asdadfadfasd[,'seasonaladj']
+X<-asdadfadfasd[,'seasonaladj']
+autoplot(ts(asdadfadfasd[,'irregular'], start = 1998, frequency = 12))
+
+X<- ts(X, start = 1998, frequency = 12)
+lin.mod <- lm(X ~ time(X))
+lin.trend <- lin.mod$fitted.values
+linear <- ts(lin.trend, start = 1998, frequency = 12)
+lin.cycle <- X - linear
+autoplot(lin.cycle)
+X<-lin.cycle
+
 
 
 desestacionalizar
