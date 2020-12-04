@@ -159,12 +159,13 @@ data <- read_delim("DATA_METODOLOGIA.csv",
                    trim_ws = TRUE)
 head(data)
 summary(data)
+data<-subset(data, FECHA>='2010-01-01')
 #data <- ts(data, start = c(1998,1), frequency = 12)
 autoplot(ts(data, start = c(1998,1), frequency = 12), facets = T)
 attach(data)
 ##Pruebas de raíz unitaria####
 
-X=BANREP_RATE
+X=shock_m
 qplot(FECHA[], X, geom = 'line')
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "trend")); interp_urdf(ur.df(X,type = 'trend', lags=8),level = "5pct")
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "drift")); interp_urdf(ur.df(X,type = 'drift', lags=8),level = "5pct")
@@ -200,7 +201,7 @@ lin.cycle <- X - linear
 autoplot(lin.cycle)
 X<-lin.cycle
 
-X<-FEDERAL_RATE
+X<-TOTRES- NONBOR
 lin.mod <- lm(X ~ time(X))
 lin.trend <- lin.mod$fitted.values
 linear <- ts(lin.trend, start = 1998, frequency = 12)
@@ -225,7 +226,7 @@ b_exo<-matrix(nrow = 3, ncol = 3,
                     c( 0 , NA , 0 )))
  
 VARselect(U, type = 'none')
-SVAR_exo<-SVAR(VAR(U, p = 1, ic = 'AIC'), ic = 'AIC', Bmat = b_exo, estmethod = 'scoring', max.iter = 1000, maxls = 1000)
+SVAR_exo<-SVAR(VAR(U, p = 5, ic = 'AIC'), ic = 'AIC', Bmat = b_exo, estmethod = 'scoring', max.iter = 1000, maxls = 1000)
 autoplot(ts(residuals(VAR(U, p = 1, ic = 'AIC'))[,'u_nbr'], start = 1998, frequency = 12))
 summary(SVAR_exo)
 plot(irf(SVAR_exo, ortho = T))
@@ -298,24 +299,183 @@ b1<-diag(nrow = 9, ncol = 9)
 SVAR1<-SVAR(VAR_1, Amat = a1, Bmat = NULL, max.iter = 2000, maxls = 1000)
 summary(SVAR1)
 
-Y2<-cbind(v_s, BANREP_RATE, lIPI_COL, 
-          lIPC_COL, lITCR, 'XN'=EXPORTACIONES-IMPORTACIONES)
-diffY2<-diff(Y2)
+shock_m<-residuals(lm(SHADOW_RATE~IPI_US+CPI_US+lBRENT+u_trr+u_nbr))
+autoplot(ts(shock_m, start = 1998, frequency = 12))
 
-VARselect(diffY2, type = 'none')
+
+lM3_USA<-log(M3_USA)
+Y2<-cbind(lBRENT, BANREP_RATE, lIPI_COL, 
+          lIPC_COL, lITCR)
+diffY2<-diff(Y2)
+diffY2<-cbind('shock_m'= shock_m[-1], diff(Y2))
+VARselect(diffY2, type = 'none', lag.max = 20)
 VAR2<- VAR(diffY2, p = 1, type = 'none', ic = 'BIC')
 summary(VAR2)
 
+cor(diffY2)
 
 a4<-matrix(nrow = 6, ncol = 6, 
-           rbind(c( 1 , 0 , 0, 0, 0, 0), 
-                 c( NA , 1 , 0, 0, 0, 0),
-                 c( NA , NA , 1, 0 , 0 , 0),###
-                 c( NA , NA , NA , 1 , 0, 0),
-                 c( NA , NA , NA , NA , 1, 0),
-                 c( NA , NA , NA, NA, NA, 1)
+           rbind(c( 1 , 0 , 0 , 0, 0, 0), 
+                 c( NA , 1 , 0 , 0, 0, 0),
+                 c( NA , 0 , 1 , 0 , 0 , 0),###
+                 c( NA , 0 , 0 , 1 , 0, 0),
+                 c( NA , 0 , 0 , 0 , 1, 0),
+                 c( NA , 0 , 0 , 0 , 0 , 1)
            ))
 
-SVAR2<-SVAR(VAR2, Amat = a4, max.iter = 2000, maxls = 1000)
+b4<-diag(nrow = 6, ncol = 6)
+for (i in 1:6) {
+  for (j in 1:6) {
+    ifelse(b4[i,j]==1, b4[i,j]<-NA, b4[i,j]<-0)}
+}
+
+SVAR2<-SVAR(VAR2, Amat = a4, Bmat = b4, estmethod = 'scoring', max.iter = 2000, maxls = 1000)
+summary(SVAR2)
+plot(irf(SVAR2, impulse = 'shock_m', ortho = T, cumulative = F, boot = T, n.ahead = 5, ci = .68, runs = 100))
+
+autoplot(ts(data, start = 1998, frequency = 12))
+
+
+Y3<-cbind(TOTRES, NONBOR, FEDERAL_RATE, BANREP_RATE, lIPI_COL, 
+          lIPC_COL, lITCR)
+diffY3<-diff(Y3)
+diffY3<-cbind(residSVAR_exo, diff(Y3))
+VARselect(diffY3, type = 'none', lag.max = 20)
+VAR3<- VAR(diffY3, p = 1, type = 'none', ic = 'BIC')
+summary(VAR3)
+
+cor(diffY3)
+
+a5<-matrix(nrow = 7, ncol = 7, 
+           rbind(c( 1 , 0 , 0 , 0 , 0 , 0, 0), 
+                 c( 0 , 1 , 0 , 0 , 0 , 0, 0),
+                 c( 0 , 0 , 1 , 0 , 0 , 0, 0),###
+                 c( 0 , NA , NA , 1 , 0 , 0, 0),
+                 c( 0 , NA , NA , 0 , 1 , 0, 0),
+                 c( 0 , NA , NA , 0 , 0 , 1, 0),
+                 c( 0 , NA , NA , 0 , 0 , 0, 1)
+           ))
+
+b5<-matrix(nrow = 7, ncol = 7, 
+           rbind(c( 1 , NA , 0 , 0 , 0 , 0, 0), 
+                 c( 1 , 1 , -1 , 0 , 0 , 0, 0),
+                 c( 0 , NA , 0 , 0 , 0 , 0, 0),###
+                 c( 0 , 0 , 0 , NA , 0 , 0, 0),
+                 c( 0 , 0 , 0 , 0 , NA , 0, 0),
+                 c( 0 , 0 , 0 , 0 , 0 , NA, 0),
+                 c( 0 , 0 , 0 , 0 , 0 , 0, NA)
+           ))
+
+SVAR3<-SVAR(VAR3, Amat = a5, Bmat = b5, estmethod = 'scoring', max.iter = 2000, maxls = 5000)
+summary(SVAR3)
+plot(irf(SVAR3, impulse = 'FEDERAL_RATE', ortho = T, cumulative = F, boot = T, n.ahead = 5, ci = .68, runs = 100))
+
+#Salió algo ####
+lM3_COL<-log(M3_COL)
+shock_m<-residuals(lm(SHADOW_RATE~IPI_US+CPI_US+lBRENT+u_trr+u_nbr))
+autoplot(ts(shock_m, start = 1998, frequency = 12))
+
+Y4<-cbind(shock_m, BANREP_RATE, lIPI_COL, lIPC_COL)
+diffY4<-diff(Y4)
+diffY4<-cbind(residSVAR_exo, diff(Y4))
+VARselect(diffY4, type = 'none', lag.max = 10)
+VAR4<- VAR(diffY4, p = 10, type = 'none', ic = 'BIC')
+summary(VAR4)
+
+a6<-matrix(nrow = 4, ncol = 4, 
+           rbind(c( 1 , 0 , 0 , 0), 
+                 c( NA , 1 , 0 , 0),
+                 c( NA , NA , 1 , 0),###
+                 c( NA , NA , 0 , 1)
+           ))
+
+b6<-diag(nrow = 4, ncol = 4)
+for (i in 1:4) {
+  for (j in 1:4) {
+    ifelse(b6[i,j]==1, b6[i,j]<-NA, b6[i,j]<-0)}
+}
+
+SVAR4<-SVAR(VAR4, Amat = a6, Bmat = b6, estmethod = 'scoring', max.iter = 2000, maxls = 1000)
+summary(SVAR4)
+plot(irf(SVAR4, impulse = c('BANREP_RATE','shock_m'), response = 'lIPC_COL', ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR4, impulse = c('BANREP_RATE','shock_m'), response = 'lIPI_COL', ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+
+P.62=serial.test(VAR4, lags.pt = 75, type = "PT.asymptotic");P.62 #No rechazo, se cumple el supuesto
+P.50=serial.test(VAR4, lags.pt = 50, type = "PT.asymptotic");P.50 #No rechazo, se cumple el supuesto
+P.20=serial.test(VAR4, lags.pt = 20, type = "PT.asymptotic");P.20 #No rechazo, se cumple el supuesto
+
+plot(P.30) #Bien comportados, salvo por los residuales al cuadrado
+plot(P.62)
+plot(VAR4)
+#Homocedasticidad: Test tipo ARCH multivariado
+arch.test(VAR4, lags.multi = 75) 
+arch.test(VAR4, lags.multi = 50) #Rechazo, no se cumple el supuesto
+arch.test(VAR4, lags.multi = 20) #Rechazo, no se cumple el supuesto
+
+##Test Jarque-Bera multivariado
+plot(normality.test(VAR4, multivariate.only = T)) #Rechazo, no se cumple el supuesto. 
+#Estabilidad del VAR
+roots(VAR4)
+stability(VAR4); plot(stability(VAR4))
+autoplot(ts(lIPC_COL, start = 1, frequency = 12))
+
+asfgsfddhha<-cbind(lM3_USA, shock_m, v_s, SHADOW_RATE, residSVAR_exo, IPC_COL, IPI_COL, ITCR, lM3_COL, BANREP_RATE, lBRENT, lCAFE)
+cor(asfgsfddhha)
+
+Y5<-cbind(shock_m, BANREP_RATE, lIPI_COL, lIPC_COL, lITCR)
+diffY5<-diff(Y5)
+diffY5<-cbind(residSVAR_exo, diff(Y5))
+VARselect(diffY5, type = 'none', lag.max = 10)
+VAR5<- VAR(diffY5, p = 10, type = 'none', ic = 'BIC', exogen = d08[-1])
+summary(VAR5)
+
+a7<-matrix(nrow = 5, ncol = 5, 
+           rbind(c( 1 , 0 , 0 , 0, 0), 
+                 c( NA , 1 , 0 , 0, 0),
+                 c( NA , NA , 1 , 0, 0),###
+                 c( NA , NA , 0 , 1, 0),
+                 c( NA , NA , 0 , NA, 1)
+           ))
+
+b7<-diag(nrow = 5, ncol = 5)
+for (i in 1:5) {
+  for (j in 1:5) {
+    ifelse(b7[i,j]==1, b7[i,j]<-NA, b7[i,j]<-0)}
+}
+
+SVAR5<-SVAR(VAR5, Amat = a7, Bmat = b7, estmethod = 'scoring', max.iter = 2000, maxls = 1000)
+summary(SVAR5)
+plot(irf(SVAR5, impulse = c('BANREP_RATE','shock_m'), response = c('lIPI_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR5, impulse = c('BANREP_RATE','shock_m'), response = c('lIPC_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR5, impulse = c('BANREP_RATE','shock_m'), response = c('lITCR'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+
+P.62=serial.test(VAR5, lags.pt = 75, type = "PT.asymptotic");P.62 #No rechazo, se cumple el supuesto
+P.50=serial.test(VAR5, lags.pt = 50, type = "PT.asymptotic");P.50 #No rechazo, se cumple el supuesto
+P.20=serial.test(VAR5, lags.pt = 20, type = "PT.asymptotic");P.20 #No rechazo, se cumple el supuesto
+
+plot(P.30) #Bien comportados, salvo por los residuales al cuadrado
+plot(P.62)
+plot(VAR5)
+#Homocedasticidad: Test tipo ARCH multivariado
+arch.test(VAR5, lags.multi = 75) 
+arch.test(VAR5, lags.multi = 50) #Rechazo, no se cumple el supuesto
+arch.test(VAR5, lags.multi = 20) #Rechazo, no se cumple el supuesto
+
+##Test Jarque-Bera multivariado
+plot(normality.test(VAR5, multivariate.only = T)) #Rechazo, no se cumple el supuesto. 
+#Estabilidad del VAR
+roots(VAR5)
+stability(VAR5); plot(stability(VAR5))
+
+
+d08<-rep(1,264)
+d08[1:129]<-0
+
+
+
+
+
+
+
 
 
