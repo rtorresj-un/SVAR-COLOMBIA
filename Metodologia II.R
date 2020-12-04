@@ -164,7 +164,7 @@ autoplot(ts(data, start = c(1998,1), frequency = 12), facets = T)
 attach(data)
 ##Pruebas de raíz unitaria####
 
-X=log(ITCR)
+X=BANREP_RATE
 qplot(FECHA[], X, geom = 'line')
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "trend")); interp_urdf(ur.df(X,type = 'trend', lags=8),level = "5pct")
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "drift")); interp_urdf(ur.df(X,type = 'drift', lags=8),level = "5pct")
@@ -200,7 +200,7 @@ lin.cycle <- X - linear
 autoplot(lin.cycle)
 X<-lin.cycle
 
-X<-TOTRES-NONBOR
+X<-FEDERAL_RATE
 lin.mod <- lm(X ~ time(X))
 lin.trend <- lin.mod$fitted.values
 linear <- ts(lin.trend, start = 1998, frequency = 12)
@@ -214,9 +214,9 @@ u_brr<-X
 
 U<-cbind(u_trr, u_nbr, u_ffr)
 
-v_d<-residuals(lm(u_trr~u_ffr))
-v_b<-residuals(lm(u_brr~u_ffr))
-v_s<-residuals(lm(u_nbr~v_d+v_b))
+v_d<-residuals(lm(u_trr~-1+u_ffr))
+v_b<-residuals(lm(u_brr~-1+u_ffr))
+v_s<-residuals(lm(u_nbr~-1+v_d+v_b))
 autoplot(ts(v_s, start = 1998, frequency = 12))
 
 b_exo<-matrix(nrow = 3, ncol = 3, 
@@ -243,14 +243,79 @@ lIPI_COL<-log(IPI_COL)
 lIPC_COL<-log(IPC_COL)
 lITCR<-log(ITCR)
 
-Y<-cbind(lBRENT,lCAFE, lIPI_US, lCPI_US, SHADOW_RATE, lIPI_COL, 
-         lIPC_COL, lITCR, 'XN'=EXPORTACIONES-IMPORTACIONES, BANREP_RATE)
+Y<-cbind(lBRENT,lCAFE, SHADOW_RATE, lIPI_US, lCPI_US, BANREP_RATE, lIPI_COL, 
+         lIPC_COL, lITCR, 'XN'=EXPORTACIONES-IMPORTACIONES)
 
-diffY<-diff(Y)
+Y1<-cbind(lBRENT, SHADOW_RATE, lIPI_US, lCPI_US, BANREP_RATE, lIPI_COL, 
+         lIPC_COL, lITCR)
+
+diffY<-diff(Y1)
 Y<-cbind(residSVAR_exo, diffY)
 VARselect(Y)
-VAR_1<-VAR(Y, p = 1, ic = 'AIC')
+VAR_1<-VAR(Y, p = 1, ic = 'AIC', type = 'both')
 summary(VAR_1)
+plot(irf(VAR_1, boot = T, ci = 0.68))
 
+a<-matrix(nrow = 9, ncol = 9, 
+              rbind(c( 1 , 0 , 0, 0, 0, 0, 0, 0, 0), 
+                    c( 0 , 1 , 0, 0, 0, 0, 0, 0, 0),
+                    c( NA , 0 , 1, NA , 0 , 0, 0, 0, 0),###
+                    c( NA , NA , NA , 1 , 0, 0, 0, 0, 0),
+                    c( NA , 0 , NA , NA , 1, 0, 0, 0, 0),
+                    c( NA , NA , NA, 0, 0, 1, 0, 0, 0),
+                    c( NA , NA , NA, NA, NA, NA, 1, 0, 0),
+                    c( NA , NA , NA, 0, 0, NA, NA, 1, NA),
+                    c( NA , NA , NA, 0, NA, NA, NA, NA, 1)
+                    ))
+
+a1<-matrix(nrow = 9, ncol = 9, 
+          rbind(c( 1 , 0 , 0, 0, 0, 0, 0, 0, 0), 
+                c( NA , 1 , 0, 0, 0, 0, 0, 0, 0),
+                c( NA , NA , 1, 0 , 0 , 0, 0, 0, 0),###
+                c( NA , NA , NA , 1 , 0, 0, 0, 0, 0),
+                c( NA , NA , NA , NA , 1, 0, 0, 0, 0),
+                c( NA , NA , NA, NA, NA, 1, 0, 0, 0),
+                c( NA , NA , NA, NA, NA, NA, 1, 0, 0),
+                c( NA , NA , NA, NA, NA, NA, NA, 1, 0),
+                c( NA , NA , NA, NA, NA, NA, NA, NA, 1)
+          ))
+
+a2<-matrix(nrow = 8, ncol = 8, 
+           rbind(c( 1 , 0 , 0, 0, 0, 0, 0, 0), 
+                 c( NA , 1 , 0, 0, 0, 0, 0, 0),
+                 c( NA , NA , 1, 0 , 0 , 0, 0, 0),###
+                 c( NA , NA , NA , 1 , 0, 0, 0, 0),
+                 c( NA , NA , NA , NA , 1, 0, 0, 0),
+                 c( NA , NA , NA, NA, NA, 1, 0, 0),
+                 c( NA , NA , NA, NA, NA, NA, 1, 0),
+                 c( NA , NA , NA, NA, NA, NA, NA, 1)
+           ))
+
+
+
+b1<-diag(nrow = 9, ncol = 9)
+
+SVAR1<-SVAR(VAR_1, Amat = a1, Bmat = NULL, max.iter = 2000, maxls = 1000)
+summary(SVAR1)
+
+Y2<-cbind(v_s, BANREP_RATE, lIPI_COL, 
+          lIPC_COL, lITCR, 'XN'=EXPORTACIONES-IMPORTACIONES)
+diffY2<-diff(Y2)
+
+VARselect(diffY2, type = 'none')
+VAR2<- VAR(diffY2, p = 1, type = 'none', ic = 'BIC')
+summary(VAR2)
+
+
+a4<-matrix(nrow = 6, ncol = 6, 
+           rbind(c( 1 , 0 , 0, 0, 0, 0), 
+                 c( NA , 1 , 0, 0, 0, 0),
+                 c( NA , NA , 1, 0 , 0 , 0),###
+                 c( NA , NA , NA , 1 , 0, 0),
+                 c( NA , NA , NA , NA , 1, 0),
+                 c( NA , NA , NA, NA, NA, 1)
+           ))
+
+SVAR2<-SVAR(VAR2, Amat = a4, max.iter = 2000, maxls = 1000)
 
 
