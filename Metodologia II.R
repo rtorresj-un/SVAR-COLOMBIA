@@ -142,11 +142,11 @@ interp_urdf <- function(urdf, level) {
 }
 #Función para graficar impulso respuesta con bootstraping
 irf_ggplot<-function(VAR, impulso, respuesta){
-  IRF = irf(VAR, impulse=impulso ,response=respuesta,n.ahead = 15,ci=0.95, boot=T, ortho=T, runs=1000) #No analizaremos respuestas ortogonales (Ahora vemos qué es eso);  
+  IRF = irf(VAR, impulse=impulso ,response=respuesta,n.ahead = 15,ci=0.68, boot=T, ortho=T, runs=500) #No analizaremos respuestas ortogonales (Ahora vemos qué es eso);  
   data_irf= data.frame(IRF$irf,IRF$Lower,IRF$Upper, c(0:15))
   ggplot(data_irf, aes(x=data_irf[,4], y=data_irf[,1])) +
     geom_line() + 
-    geom_ribbon(aes(ymin=data_irf[,2], ymax=data_irf[,3], fill="Bandas al 95% \n de confianza"), alpha=.3) +
+    geom_ribbon(aes(ymin=data_irf[,2], ymax=data_irf[,3], fill="Bandas al 68% \n de confianza"), alpha=.3) +
     theme_minimal() + scale_color_distiller() + scale_fill_ordinal(name='') +
     ylab("Porcentaje de cambio") +
     xlab("Pasos adelante") + ggtitle(str_c('Respuesta de ',as.character(colnames(data_irf)[1]), ' ante cambios en ', impulso))
@@ -159,13 +159,13 @@ data <- read_delim("DATA_METODOLOGIA.csv",
                    trim_ws = TRUE)
 head(data)
 summary(data)
-data<-subset(data, FECHA>='2010-01-01')
+data1<-subset(data, FECHA>='2008-11-01')
 #data <- ts(data, start = c(1998,1), frequency = 12)
-autoplot(ts(data, start = c(1998,1), frequency = 12), facets = T)
-attach(data)
+autoplot(ts(data1, start = c(1998,1), frequency = 12), facets = T)
+attach(data1)
 ##Pruebas de raíz unitaria####
 
-X=shock_m
+X=residSVAR_exo
 qplot(FECHA[], X, geom = 'line')
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "trend")); interp_urdf(ur.df(X,type = 'trend', lags=8),level = "5pct")
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "drift")); interp_urdf(ur.df(X,type = 'drift', lags=8),level = "5pct")
@@ -184,7 +184,7 @@ summary(ur.df(diff(X), lags=8, selectlags = "AIC", type = "none")); interp_urdf(
 
 qplot(FECHA[-1], diff(X), geom = 'line')
 
-plot(decompose(ts(X, frequency = 12) ))
+plot(decompose(ts(X, start = c(2008,11), frequency = 12) ))
 adsdas<-decompose(ts(X, frequency = 12))
 library(seasonal)
 plot(seas(ts(X, start = 1998, frequency = 12), x11 =''))
@@ -193,18 +193,19 @@ asdadfadfasd<-fadfda[["data"]]
 X<-asdadfadfasd[,'seasonaladj']
 autoplot(ts(asdadfadfasd[,'irregular'], start = 1998, frequency = 12))
 
-X<- ts(X, start = 1998, frequency = 12)
-lin.mod <- lm(X ~ time(X))
-lin.trend <- lin.mod$fitted.values
-linear <- ts(lin.trend, start = 1998, frequency = 12)
-lin.cycle <- X - linear
-autoplot(lin.cycle)
-X<-lin.cycle
+#X<- ts(X, start = 1998, frequency = 12)
+#lin.mod <- lm(X ~ time(X))
+#lin.trend <- lin.mod$fitted.values
+#linear <- ts(lin.trend, start = 1998, frequency = 12)
+#lin.cycle <- X - linear
+#autoplot(lin.cycle)
+#X<-lin.cycle
 
+#Shocks monetarios####
 X<-TOTRES- NONBOR
 lin.mod <- lm(X ~ time(X))
 lin.trend <- lin.mod$fitted.values
-linear <- ts(lin.trend, start = 1998, frequency = 12)
+linear <- ts(lin.trend, start = c(2008,11), frequency = 12)
 lin.cycle <- X - linear
 autoplot(lin.cycle)
 X<-lin.cycle
@@ -213,12 +214,12 @@ u_trr<-X
 u_nbr<-X
 u_brr<-X
 
-U<-cbind(u_trr, u_nbr, u_ffr)
-
 v_d<-residuals(lm(u_trr~-1+u_ffr))
 v_b<-residuals(lm(u_brr~-1+u_ffr))
 v_s<-residuals(lm(u_nbr~-1+v_d+v_b))
 autoplot(ts(v_s, start = 1998, frequency = 12))
+
+U<-cbind(u_trr, u_nbr, u_ffr)
 
 b_exo<-matrix(nrow = 3, ncol = 3, 
               rbind(c( 1 , NA , 0 ), 
@@ -226,16 +227,17 @@ b_exo<-matrix(nrow = 3, ncol = 3,
                     c( 0 , NA , 0 )))
  
 VARselect(U, type = 'none')
-SVAR_exo<-SVAR(VAR(U, p = 5, ic = 'AIC'), ic = 'AIC', Bmat = b_exo, estmethod = 'scoring', max.iter = 1000, maxls = 1000)
-autoplot(ts(residuals(VAR(U, p = 1, ic = 'AIC'))[,'u_nbr'], start = 1998, frequency = 12))
+SVAR_exo<-SVAR(VAR(U, p = 1, ic = 'BIC'), Bmat = b_exo, estmethod = 'scoring', max.iter = 4000, maxls = 1000)
 summary(SVAR_exo)
+autoplot(ts(residuals(VAR(U, p = 1, ic = 'BIC'))[,'u_nbr'], start = c(2008,11), frequency = 12))
+residSVAR_exo<-t(solve(SVAR_exo[["B"]])%*%t(U))[,'u_nbr']
+autoplot(ts(residSVAR_exo,start = c(2008,11),frequency = 12))
 plot(irf(SVAR_exo, ortho = T))
-autoplot(ts(SVAR_exo[["var"]][["varresult"]][["u_nbr"]][["residuals"]], start = 1998, frequency = 12))
 
-residSVAR_exo<-SVAR_exo$Sigma.U%*%t(residuals(VAR(U, p = 1, ic = 'AIC')))
-residSVAR_exo<- t(residSVAR_exo)[,'u_nbr']
-autoplot(ts(residSVAR_exo,start = 1998,frequency = 12))
+shock_m<-residuals(lm(SHADOW_RATE~IPI_US+CPI_US+lBRENT+u_trr+u_nbr))
+autoplot(ts(shock_m, start = 1998, frequency = 12))
 
+#Variables transformadas####
 lBRENT<-log(BRENT)
 lCAFE<-log(CAFE)
 lIPI_US<-log(IPI_US)
@@ -243,7 +245,10 @@ lCPI_US<-log(CPI_US)
 lIPI_COL<-log(IPI_COL)
 lIPC_COL<-log(IPC_COL)
 lITCR<-log(ITCR)
+lEXPORTACIONES<-log(EXPORTACIONES)
+lM3_COL<-log(M3_COL)
 
+#Modelos####
 Y<-cbind(lBRENT,lCAFE, SHADOW_RATE, lIPI_US, lCPI_US, BANREP_RATE, lIPI_COL, 
          lIPC_COL, lITCR, 'XN'=EXPORTACIONES-IMPORTACIONES)
 
@@ -292,16 +297,10 @@ a2<-matrix(nrow = 8, ncol = 8,
                  c( NA , NA , NA, NA, NA, NA, NA, 1)
            ))
 
-
-
 b1<-diag(nrow = 9, ncol = 9)
 
 SVAR1<-SVAR(VAR_1, Amat = a1, Bmat = NULL, max.iter = 2000, maxls = 1000)
 summary(SVAR1)
-
-shock_m<-residuals(lm(SHADOW_RATE~IPI_US+CPI_US+lBRENT+u_trr+u_nbr))
-autoplot(ts(shock_m, start = 1998, frequency = 12))
-
 
 lM3_USA<-log(M3_USA)
 Y2<-cbind(lBRENT, BANREP_RATE, lIPI_COL, 
@@ -371,15 +370,14 @@ summary(SVAR3)
 plot(irf(SVAR3, impulse = 'FEDERAL_RATE', ortho = T, cumulative = F, boot = T, n.ahead = 5, ci = .68, runs = 100))
 
 #Salió algo ####
-lM3_COL<-log(M3_COL)
 shock_m<-residuals(lm(SHADOW_RATE~IPI_US+CPI_US+lBRENT+u_trr+u_nbr))
 autoplot(ts(shock_m, start = 1998, frequency = 12))
 
-Y4<-cbind(shock_m, BANREP_RATE, lIPI_COL, lIPC_COL)
+Y4<-cbind(u_nbr, BANREP_RATE, lIPI_COL, lIPC_COL)
 diffY4<-diff(Y4)
 diffY4<-cbind(residSVAR_exo, diff(Y4))
 VARselect(diffY4, type = 'none', lag.max = 10)
-VAR4<- VAR(diffY4, p = 10, type = 'none', ic = 'BIC')
+VAR4<- VAR(diffY4, p = 5, type = 'none', ic = 'BIC')
 summary(VAR4)
 
 a6<-matrix(nrow = 4, ncol = 4, 
@@ -467,15 +465,73 @@ plot(normality.test(VAR5, multivariate.only = T)) #Rechazo, no se cumple el supu
 roots(VAR5)
 stability(VAR5); plot(stability(VAR5))
 
-
 d08<-rep(1,264)
 d08[1:129]<-0
 
+Y6<-cbind(residSVAR_exo, lBRENT, lIPI_US, BANREP_RATE, lIPI_COL, lIPC_COL, lITCR)
+diffY6<-diff(Y6)
+diffY6<-cbind(residSVAR_exo, diff(Y6))
+VARselect(diffY6, type = 'none', lag.max = 10)
+VAR6<- VAR(diffY6, p = 10, type = 'none', ic = 'BIC')
+summary(VAR6)
+
+a8<-matrix(nrow = 7, ncol = 7, 
+           rbind(c( 1 , 0 , 0 , 0 , 0 , 0, 0), 
+                 c( 0 , 1 , 0 , 0 , 0 , 0, 0),
+                 c( 0 , 0 , 1 , 0 , 0 , 0, 0), ###
+                 c( 0 , NA , 0 , 1 , 0 , 0, 0),
+                 c( 0 , NA , NA , 0 , 1 , 0, 0),
+                 c( 0 , 0 , 0 , 0 , NA , 1, 0), ###
+                 c( NA , NA , NA , NA , NA , NA, 1)
+           ))
+
+b8<-diag(nrow = 7, ncol = 7)
+for (i in 1:7) {
+  for (j in 1:7) {
+    ifelse(b8[i,j]==1, b8[i,j]<-NA, b8[i,j]<-0)}
+}
+
+SVAR6<-SVAR(VAR6, Amat = a8, Bmat = b8, estmethod = 'scoring', max.iter = 2000, maxls = 1000)
+summary(SVAR6)
+plot(irf(SVAR6, impulse = c('BANREP_RATE'), response = c('lIPI_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR6, impulse = c('BANREP_RATE'), response = c('lIPC_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR6, impulse = c('BANREP_RATE'), response = c('lITCR'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR6, impulse = c('lITCR'), response = c('lIPI_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR6, impulse = c('lITCR'), response = c('lIPC_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR6, impulse = c('residSVAR_exo'), response = c('lIPI_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR6, impulse = c('residSVAR_exo'), response = c('lIPC_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR6, impulse = c('residSVAR_exo'), response = c('lITCR'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
+plot(irf(SVAR6, impulse = c('lBRENT'), response = c('lITCR'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
 
 
+P.62=serial.test(VAR6, lags.pt = 75, type = "PT.asymptotic");P.62 #No rechazo, se cumple el supuesto
+P.50=serial.test(VAR6, lags.pt = 50, type = "PT.asymptotic");P.50 #No rechazo, se cumple el supuesto
+P.20=serial.test(VAR6, lags.pt = 20, type = "PT.asymptotic");P.20 #No rechazo, se cumple el supuesto
 
+plot(P.20) #Bien comportados, salvo por los residuales al cuadrado
+plot(P.62)
+plot(VAR6)
+#Homocedasticidad: Test tipo ARCH multivariado
+arch.test(VAR6, lags.multi = 75) 
+arch.test(VAR6, lags.multi = 50) #Rechazo, no se cumple el supuesto
+arch.test(VAR6, lags.multi = 20) #Rechazo, no se cumple el supuesto
 
+##Test Jarque-Bera multivariado
+normality.test(VAR6, multivariate.only = T) #Rechazo, no se cumple el supuesto. 
+#Estabilidad del VAR
+roots(VAR6)
+stability(VAR6); plot(stability(VAR6))
 
+grid.arrange(ncol=3, 
+             irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lIPI_COL'),
+             irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lIPC_COL'),
+             irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lITCR'),
+             irf_ggplot(VAR = SVAR6, impulso = 'lIPI_US', respuesta = 'lIPI_COL'),
+             irf_ggplot(VAR = SVAR6, impulso = 'lIPI_US', respuesta = 'lIPC_COL'),
+             irf_ggplot(VAR = SVAR6, impulso = 'lIPI_US', respuesta = 'lITCR')
+)
+
+plot(FECHA, residSVAR_exo)+plot(FECHA, shock_m)
 
 
 
