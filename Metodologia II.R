@@ -486,30 +486,31 @@ stability(VAR5); plot(stability(VAR5))
 d08<-rep(1,264)
 d08[1:129]<-0
 
-Y6<-cbind(residSVAR_exo, lBRENT, lIPI_US, BANREP_RATE, lIPI_COL, lIPC_COL, lITCR)
+Y6<-cbind(residSVAR_exo, lBRENT, lIPI_US, BANREP_RATE, lIPI_COL, lIPC_COL, lITCR, lM3_COL)
 diffY6<-diff(Y6)
 diffY6<-cbind(residSVAR_exo, diff(Y6))
 VARselect(diffY6, type = 'none', lag.max = 10)
 VAR6<- VAR(diffY6, p = 3, type = 'none', ic = 'BIC')
 summary(VAR6)
 
-a8<-matrix(nrow = 7, ncol = 7, 
-           rbind(c( 1 , 0 , 0 , 0 , 0 , 0, 0), 
-                 c( 0 , 1 , 0 , 0 , 0 , 0, 0),
-                 c( 0 , 0 , 1 , 0 , 0 , 0, 0), ###
-                 c( 0 , NA , 0 , 1 , 0 , 0, 0),
-                 c( 0 , NA , NA , 0 , 1 , 0, 0),
-                 c( 0 , 0 , 0 , 0 , NA , 1, 0), ###
-                 c( NA , NA , NA , NA , NA , NA, 1)
+a8<-matrix(nrow = 8, ncol = 8, 
+           rbind(c( 1 , 0 , 0 , 0 , 0 , 0, 0, 0), 
+                 c( 0 , 1 , 0 , 0 , 0 , 0, 0, 0),
+                 c( NA , NA , 1 , 0 , 0 , 0, 0, 0), ###
+                 c( 0 , 0 , 0 , 1 , NA , 0, 0, NA),
+                 c( 0 , NA , NA , 0 , 1 , 0, 0, 0),
+                 c( 0 , 0 , 0 , 0 , NA , 1, 0, 0), ###
+                 c( NA , NA , NA , NA , NA , NA, 1, 0),
+                 c( 0 , 0 , 0 , NA , NA , -1, 0, 1)
            ))
 
-b8<-diag(nrow = 7, ncol = 7)
-for (i in 1:7) {
-  for (j in 1:7) {
+b8<-diag(nrow = 8, ncol = 8)
+for (i in 1:8) {
+  for (j in 1:8) {
     ifelse(b8[i,j]==1, b8[i,j]<-NA, b8[i,j]<-0)}
 }
 
-SVAR6<-SVAR(VAR6, Amat = a8, Bmat = b8, estmethod = 'scoring', max.iter = 2000, maxls = 1000)
+SVAR6<-SVAR(VAR6, Amat = a8, Bmat = b8, estmethod = 'scoring', max.iter = 999, maxls = 1000)
 summary(SVAR6)
 plot(irf(SVAR6, impulse = c('BANREP_RATE'), response = c('lIPI_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
 plot(irf(SVAR6, impulse = c('BANREP_RATE'), response = c('lIPC_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
