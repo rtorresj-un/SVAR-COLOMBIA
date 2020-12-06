@@ -227,15 +227,33 @@ b_exo<-matrix(nrow = 3, ncol = 3,
                     c( 0 , NA , 0 )))
  
 VARselect(U, type = 'none')
-SVAR_exo<-SVAR(VAR(U, p = 1, ic = 'BIC'), Bmat = b_exo, estmethod = 'scoring', max.iter = 4000, maxls = 1000)
-summary(SVAR_exo)
+SVAR_exo1<-SVAR(VAR(U, p = 1, ic = 'BIC'), Bmat = b_exo, estmethod = 'scoring', max.iter = 4000, maxls = 1000)
+summary(SVAR_exo1)
 autoplot(ts(residuals(VAR(U, p = 1, ic = 'BIC'))[,'u_nbr'], start = c(2008,11), frequency = 12))
 residSVAR_exo<-t(solve(SVAR_exo[["B"]])%*%t(U))[,'u_nbr']
 autoplot(ts(residSVAR_exo,start = c(2008,11),frequency = 12))
 plot(irf(SVAR_exo, ortho = T))
 
-shock_m<-residuals(lm(SHADOW_RATE~IPI_US+CPI_US+lBRENT+u_trr+u_nbr))
-autoplot(ts(shock_m, start = 1998, frequency = 12))
+#R<-cbind(GDP,CPI_US,BRENT,VIX,TOTRES,NONBOR,SHADOW_RATE)
+#diffR<-diff(R)
+#cor(R)
+#a_exo<-matrix(nrow = 7, ncol = 7, 
+#           rbind(c( 1 , 0 , 0 , 0 , 0 , 0, 0), 
+#                 c( 0 , 1 , 0 , 0 , 0 , 0, 0),
+#                 c( 0 , 0 , 1 , 0 , 0 , 0, 0),###
+#                 c( 0 , 0 , 0 , 1 , 0 , 0, 0),
+#                 c( 0 , 0 , 0 , 0 , 1 , 0, 0),
+#                 c( 0 , 0 , 0 , 0 , 0 , 1, 0),
+#                 c( NA , NA , NA , NA , NA, NA, 1)
+#           ))
+#
+#SVAR_exo2<-SVAR(VAR(R, p = 2, ic = 'BIC'), Amat = a_exo, Bmat = NULL, estmethod = 'scoring', max.iter = 1000, maxls = 10000)
+#summary(SVAR_exo2)
+#residSVAR_exo2<-SVAR_exo2[["var"]][["varresult"]][["SHADOW_RATE"]][["residuals"]]
+#autoplot(ts(residSVAR_exo2, start = c(2008,11), frequency = 12))
+
+shock_m<-residuals(lm(SHADOW_RATE~BRENT+VIX+GDP+CPI_US+TOTRES+NONBOR))
+autoplot(ts(shock_m, start = c(2008,11), frequency = 12))
 
 #Variables transformadas####
 lBRENT<-log(BRENT)
@@ -472,7 +490,7 @@ Y6<-cbind(residSVAR_exo, lBRENT, lIPI_US, BANREP_RATE, lIPI_COL, lIPC_COL, lITCR
 diffY6<-diff(Y6)
 diffY6<-cbind(residSVAR_exo, diff(Y6))
 VARselect(diffY6, type = 'none', lag.max = 10)
-VAR6<- VAR(diffY6, p = 10, type = 'none', ic = 'BIC')
+VAR6<- VAR(diffY6, p = 3, type = 'none', ic = 'BIC')
 summary(VAR6)
 
 a8<-matrix(nrow = 7, ncol = 7, 
@@ -503,7 +521,6 @@ plot(irf(SVAR6, impulse = c('residSVAR_exo'), response = c('lIPC_COL'), ortho = 
 plot(irf(SVAR6, impulse = c('residSVAR_exo'), response = c('lITCR'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
 plot(irf(SVAR6, impulse = c('lBRENT'), response = c('lITCR'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
 
-
 P.62=serial.test(VAR6, lags.pt = 75, type = "PT.asymptotic");P.62 #No rechazo, se cumple el supuesto
 P.50=serial.test(VAR6, lags.pt = 50, type = "PT.asymptotic");P.50 #No rechazo, se cumple el supuesto
 P.20=serial.test(VAR6, lags.pt = 20, type = "PT.asymptotic");P.20 #No rechazo, se cumple el supuesto
@@ -530,8 +547,8 @@ grid.arrange(ncol=3,
              irf_ggplot(VAR = SVAR6, impulso = 'lIPI_US', respuesta = 'lIPC_COL'),
              irf_ggplot(VAR = SVAR6, impulso = 'lIPI_US', respuesta = 'lITCR')
 )
+ stargazer::stargazer(SVAR6[["var"]][["varresult"]], type = 'text')
+stargazer::stargazer(summary(VAR6))
 
-plot(FECHA, residSVAR_exo)+plot(FECHA, shock_m)
-
-
+print(xtable::xtable(jfhafsakdsajdka[["varresult"]]))
 
