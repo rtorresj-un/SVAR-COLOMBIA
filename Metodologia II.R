@@ -500,7 +500,7 @@ a8<-matrix(nrow = 8, ncol = 8,
                  c( 0 , 0 , 0 , 1 , NA , 0, 0, NA),
                  c( 0 , NA , NA , 0 , 1 , 0, 0, 0),
                  c( 0 , 0 , 0 , 0 , NA , 1, 0, 0), ###
-                 c( NA , NA , NA , NA , NA , NA, 1, 0),
+                 c( NA , NA , NA , NA , NA , NA, 1, NA),
                  c( 0 , 0 , 0 , NA , NA , -1, 0, 1)
            ))
 
@@ -510,7 +510,7 @@ for (i in 1:8) {
     ifelse(b8[i,j]==1, b8[i,j]<-NA, b8[i,j]<-0)}
 }
 
-SVAR6<-SVAR(VAR6, Amat = a8, Bmat = b8, estmethod = 'scoring', max.iter = 999, maxls = 1000)
+SVAR6<-SVAR(VAR6, Amat = a8, Bmat = b8, estmethod = 'scoring', max.iter = 1000, maxls = 1000)
 summary(SVAR6)
 plot(irf(SVAR6, impulse = c('BANREP_RATE'), response = c('lIPI_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
 plot(irf(SVAR6, impulse = c('BANREP_RATE'), response = c('lIPC_COL'), ortho = T, cumulative = F, boot = T, n.ahead = 10, ci = .68, runs = 100))
