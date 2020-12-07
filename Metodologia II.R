@@ -225,7 +225,7 @@ b_exo<-matrix(nrow = 3, ncol = 3,
               rbind(c( 1 , NA , 0 ), 
                     c( 1 , 1 , -1 ),
                     c( 0 , NA , 0 )))
- 
+
 VARselect(U, type = 'none')
 SVAR_exo1<-SVAR(VAR(U, p = 1, ic = 'BIC'), Bmat = b_exo, estmethod = 'scoring', max.iter = 4000, maxls = 1000)
 summary(SVAR_exo1)
@@ -287,17 +287,6 @@ a8<-matrix(nrow = 8, ncol = 8,
                  c( 0 , 0 , 0 , NA , NA , -1, 0, 1)
            ))
 
-####### matriz A del modelo de anoche
-a9<-matrix(nrow = 7, ncol = 7, 
-           rbind(c( 1 , 0 , 0 , 0 , 0 , 0, 0), 
-                 c( 0 , 1 , 0 , 0 , 0 , 0, 0),
-                 c( 0 , 0 , 1 , 0 , 0 , 0, 0), ###
-                 c( 0 , NA , 0 , 1 , 0 , 0, 0),
-                 c( 0 , NA , NA , 0 , 1 , 0, 0),
-                 c( 0 , 0 , 0 , 0 , NA , 1, 0), ###
-                 c( NA , NA , NA , NA , NA , NA, 1)
-           ))
-
 b8<-diag(nrow = 8, ncol = 8)
 for (i in 1:8) {
   for (j in 1:8) {
@@ -338,61 +327,58 @@ normality.test(VAR6, multivariate.only = T) #Rechazo, no se cumple el supuesto.
 roots(VAR6)
 stability(VAR6); plot(stability(VAR6))
 
-             irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lIPI_COL')
-             irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lIPC_COL')
-             irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'BANREP_RATE')
-             irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lITCR')
-             irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lM3_COL')
-             irf_ggplot(VAR = SVAR6, impulso = 'BANREP_RATE', respuesta = 'lIPI_COL')
-             irf_ggplot(VAR = SVAR6, impulso = 'BANREP_RATE', respuesta = 'lIPC_COL')
-             irf_ggplot(VAR = SVAR6, impulso = 'BANREP_RATE', respuesta = 'lM3_COL')
-             
-             
+irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lIPI_COL')
+irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lIPC_COL')
+irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'BANREP_RATE')
+irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lITCR')
+irf_ggplot(VAR = SVAR6, impulso = 'residSVAR_exo', respuesta = 'lM3_COL')
+irf_ggplot(VAR = SVAR6, impulso = 'BANREP_RATE', respuesta = 'lIPI_COL')
+irf_ggplot(VAR = SVAR6, impulso = 'BANREP_RATE', respuesta = 'lIPC_COL')
+irf_ggplot(VAR = SVAR6, impulso = 'BANREP_RATE', respuesta = 'lM3_COL')
+
+
 Y7<-cbind(shock_m, lBRENT, lIPI_US, BANREP_RATE, lIPI_COL, lIPC_COL, lITCR, lM3_COL)
 diffY7<-diff(Y7)
 VARselect(diffY7, type = 'none', lag.max = 10)
 VAR6<- VAR(diffY7, p = 3, type = 'none', ic = 'BIC')
 summary(VAR7)
-             
+
 SVAR7<-SVAR(VAR7, Amat = a8, Bmat = b8, estmethod = 'scoring', max.iter = 1000, maxls = 1000)
 summary(SVAR7)
-             
-             
- stargazer::stargazer(SVAR6[["var"]][["varresult"]], 
-                      type = 'latex', 
-                      title            = "Estimación del modelo de choques monetarios para Colombia con metodología \textit{agnostic} SVAR-SOE.",
-                      covariate.labels = c("s_m_{t-1}", "log(r)_{t-1}", "Shock m_{t-2}", "log(r)_{t-2}",'Shock m_{t-3}', "log(r)_{t-3}"),
-                      omit = c('lBRENT', 'lIPI_US', 'lIPI_COL', 'lIPC_COL', 'lITCR', 'lM3_COL'),
-                      dep.var.caption  = "Variables dependientes:",
-                      dep.var.labels   = "y_t asdf y_t^*",
-                      keep.stat=c("rsq", 'f', 'll', 'bic', 'sigma2'),
-                      column.labels = c("s_m", "log(BRENT)", "log(y^*)", 'r', 'log(y)', 'log(p)', 'log(ITCR)', 'log(M3)'))
 
- stargazer::stargazer(SVAR7[["var"]][["varresult"]], 
-                      type = 'latex', 
-                      title            = "Estimación del modelo de choques monetarios para Colombia con metodología \textit{agnostic} SVAR-SOE.",
-                      covariate.labels = c("s_m_{t-1}", "log(r)_{t-1}", "Shock m_{t-2}", "log(r)_{t-2}",'Shock m_{t-3}', "log(r)_{t-3}"),
-                      omit = c('lBRENT', 'lIPI_US', 'lIPI_COL', 'lIPC_COL', 'lITCR', 'lM3_COL'),
-                      dep.var.caption  = "Variables dependientes:",
-                      dep.var.labels   = "y_t asdf y_t^*",
-                      keep.stat=c("rsq", 'f', 'll', 'bic', 'sigma2'),
-                      column.labels = c("s_m", "log(BRENT)", "log(y^*)", 'r', 'log(y)', 'log(p)', 'log(ITCR)', 'log(M3)'))
- 
- 
- stargazer::stargazer(SVAR_exo1[["var"]][["varresult"]], type = 'latex',
-                      dep.var.labels   = "U",
-                      keep.stat=c("rsq", 'f', 'll', 'bic', 'sigma2'),
-                      covariate.labels = c('u_{ffr}', 'u_{nbr}', 'u_{ttr}'),
-                      column.labels = c('u_{ffr}', 'u_{nbr}', 'u_{ttr}')
-                      )
- 
- stargazer::stargazer(modshock_m, type = 'latex',
-                      dep.var.labels   = "Wu & Xia interest rate",
-                      covariate.labels = c('BRENT', 'VIX', 'y^*', 'p^*', 'RES_{tt}', 'RES_{nb}'), 
-                      omit.stat='adj.rsq'
-                      )
- 
- 
- 
- 
-print(xtable::xtable(jfhafsakdsajdka[["varresult"]]))
+
+stargazer::stargazer(SVAR6[["var"]][["varresult"]], 
+                     type = 'latex', 
+                     title            = "Estimación del modelo de choques monetarios para Colombia con metodología \textit{agnostic} SVAR-SOE.",
+                     covariate.labels = c("s_m_{t-1}", "log(r)_{t-1}", "Shock m_{t-2}", "log(r)_{t-2}",'Shock m_{t-3}', "log(r)_{t-3}"),
+                     omit = c('lBRENT', 'lIPI_US', 'lIPI_COL', 'lIPC_COL', 'lITCR', 'lM3_COL'),
+                     dep.var.caption  = "Variables dependientes:",
+                     dep.var.labels   = "y_t asdf y_t^*",
+                     keep.stat=c("rsq", 'f', 'll', 'bic', 'sigma2'),
+                     column.labels = c("s_m", "log(BRENT)", "log(y^*)", 'r', 'log(y)', 'log(p)', 'log(ITCR)', 'log(M3)'))
+
+stargazer::stargazer(SVAR7[["var"]][["varresult"]], 
+                     type = 'latex', 
+                     title            = "Estimación del modelo de choques monetarios para Colombia con metodología \textit{agnostic} SVAR-SOE.",
+                     covariate.labels = c("s_m_{t-1}", "log(r)_{t-1}", "Shock m_{t-2}", "log(r)_{t-2}",'Shock m_{t-3}', "log(r)_{t-3}"),
+                     omit = c('lBRENT', 'lIPI_US', 'lIPI_COL', 'lIPC_COL', 'lITCR', 'lM3_COL'),
+                     dep.var.caption  = "Variables dependientes:",
+                     dep.var.labels   = "y_t asdf y_t^*",
+                     keep.stat=c("rsq", 'f', 'll', 'bic', 'sigma2'),
+                     column.labels = c("s_m", "log(BRENT)", "log(y^*)", 'r', 'log(y)', 'log(p)', 'log(ITCR)', 'log(M3)'))
+
+
+stargazer::stargazer(SVAR_exo1[["var"]][["varresult"]], type = 'latex',
+                     dep.var.labels   = "U",
+                     keep.stat=c("rsq", 'f', 'll', 'bic', 'sigma2'),
+                     covariate.labels = c('u_{ffr}', 'u_{nbr}', 'u_{ttr}'),
+                     column.labels = c('u_{ffr}', 'u_{nbr}', 'u_{ttr}')
+)
+
+stargazer::stargazer(modshock_m, type = 'latex',
+                     dep.var.labels   = "Wu & Xia interest rate",
+                     covariate.labels = c('BRENT', 'VIX', 'y^*', 'p^*', 'RES_{tt}', 'RES_{nb}'), 
+                     omit.stat='adj.rsq'
+)
+
+
