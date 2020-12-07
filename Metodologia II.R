@@ -347,6 +347,7 @@ summary(VAR7)
 SVAR7<-SVAR(VAR7, Amat = a8, Bmat = b8, estmethod = 'scoring', max.iter = 1000, maxls = 1000)
 summary(SVAR7)
 
+decomp_var<-fevd(SVAR6, n.ahead = 15)
 
 stargazer::stargazer(SVAR6[["var"]][["varresult"]], 
                      type = 'latex', 
@@ -382,4 +383,18 @@ stargazer::stargazer(modshock_m, type = 'latex',
                      omit.stat='adj.rsq'
 )
 
+stargazer::stargazer(decomp_var[["lIPI_COL"]][,'residSVAR_exo'], 
+                     decomp_var[["lIPC_COL"]][,'residSVAR_exo'],
+                     decomp_var[['BANREP_RATE']][,'residSVAR_exo'],
+                     decomp_var[["lITCR"]][,'residSVAR_exo'],
+                     decomp_var[["lM3_COL"]][,'residSVAR_exo']
+                     , type = 'text', digits = 7) 
+decomp_var[["lIPI_US"]][,'residSVAR_exo']
+library(xtable)
+print(xtable(cbind(decomp_var[["lIPI_COL"]][,'residSVAR_exo'], 
+             decomp_var[["lIPC_COL"]][,'residSVAR_exo'],
+             decomp_var[['BANREP_RATE']][,'residSVAR_exo'],
+             decomp_var[["lITCR"]][,'residSVAR_exo'],
+             decomp_var[["lM3_COL"]][,'residSVAR_exo']), digits = 6))
+plot(decomp_var)
 
