@@ -164,8 +164,8 @@ data1<-subset(data, FECHA>='2008-11-01')
 autoplot(ts(data1, start = c(1998,1), frequency = 12), facets = T)
 attach(data1)
 ##Pruebas de raíz unitaria####
-
-X=residSVAR_exo
+#X=data1
+X=#VARIABLE
 qplot(FECHA[], X, geom = 'line')
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "trend")); interp_urdf(ur.df(X,type = 'trend', lags=8),level = "5pct")
 summary(ur.df(X, lags=8, selectlags = "AIC", type = "drift")); interp_urdf(ur.df(X,type = 'drift', lags=8),level = "5pct")
@@ -202,7 +202,8 @@ autoplot(ts(asdadfadfasd[,'irregular'], start = 1998, frequency = 12))
 #X<-lin.cycle
 
 #Shocks monetarios####
-X<-TOTRES - NONBOR
+#X=1)SHADOW_RATE,2)TOTRES,3)NONBOR,4)TOTRES - NONBOR
+X<-#VARIABLE
 lin.mod <- lm(X ~ time(X))
 lin.trend <- lin.mod$fitted.values
 linear <- ts(lin.trend, start = c(2008,11), frequency = 12)
