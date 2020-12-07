@@ -287,6 +287,17 @@ a8<-matrix(nrow = 8, ncol = 8,
                  c( 0 , 0 , 0 , NA , NA , -1, 0, 1)
            ))
 
+####### matriz A del modelo de anoche
+a9<-matrix(nrow = 7, ncol = 7, 
+           rbind(c( 1 , 0 , 0 , 0 , 0 , 0, 0), 
+                 c( 0 , 1 , 0 , 0 , 0 , 0, 0),
+                 c( 0 , 0 , 1 , 0 , 0 , 0, 0), ###
+                 c( 0 , NA , 0 , 1 , 0 , 0, 0),
+                 c( 0 , NA , NA , 0 , 1 , 0, 0),
+                 c( 0 , 0 , 0 , 0 , NA , 1, 0), ###
+                 c( NA , NA , NA , NA , NA , NA, 1)
+           ))
+
 b8<-diag(nrow = 8, ncol = 8)
 for (i in 1:8) {
   for (j in 1:8) {

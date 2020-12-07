@@ -57,6 +57,25 @@ IED.da<-ts(IED.da, start = c(1994,1), frequency = 12)
 write.csv(IED.da, file = 'IED.da.csv')
 
 
+GDP <- td(GDP$GDP ~ 1, to = 3, method = "denton-cholette")
+plot(predict(GDP))
+s7<-ts(predict(GDP), start = c(1998,1), frequency = 12)
+length(s7)
+View(s7)
+write.csv(predict(GDP), file = 'GDP.csv')
 
 
+PIB <- td(PIB$PIB ~ 1, to = 3, method = "denton-cholette")
+plot(predict(PIB))
+s8<-ts(predict(PIB), start = c(1998,1), frequency = 12)
+length(s8)
+View(s8)
+write.csv(predict(PIB), file = 'PIB.csv')
+
+PIB_2 <- td(PIB2$Colombia ~ 1, to = 12, method = "denton-cholette")
+plot(predict(PIB_2))
+s8<-ts(predict(PIB), start = c(1998,1), frequency = 12)
+length(s8)
+View(s8)
+write.csv(predict(PIB_2), file = 'PIB_COMPLETO.csv')
 
